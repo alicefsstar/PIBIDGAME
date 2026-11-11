@@ -2047,14 +2047,9 @@
   }
 
   /* ============================================================
-     START GAME — ✅ CORRIGIDO
+     START GAME
      ============================================================ */
   function startGame() {
-    // ✅ Avisa se não houver questões
-    if (questionRepo.length === 0) {
-      toast("⚠️ Cadastre questões em ⚙️ CONFIG → 📚 QUESTÕES antes de iniciar!");
-    }
-
     let hc = parseInt(document.getElementById('houseCountInput').value);
     if (isNaN(hc) || hc < 4) hc = 4;
     if (hc > 60) hc = 60;
@@ -2083,14 +2078,6 @@
     renderQuestionRepo();
     renderCardsInPanel();
     configurarRoleta();
-
-    // ✅ Garante que a roleta tenha números válidos após configurar
-    if (questionRepo.length > 0) {
-      roletaNumeros = Array.from({length: Math.min(quantidadeAtual, questionRepo.length)}, (_,i) => i+1);
-      numerosSorteados = [];
-      atualizarInterfaceRoleta();
-    }
-
     updateRodizioInfo();
     clearQuestionPanel();
     updateUserTag();
@@ -2116,16 +2103,12 @@
     if (el) el.textContent = `🔁 RODÍZIO: ${rodizioIndex + 1}/${N}`;
   }
 
-  /* ✅ CORRIGIDO: validação defensiva de groups */
   function selectTeamForRodizio() {
-    if (N === 0 || groups.length === 0) {
-      console.warn('[SORTEAR] groups vazio — startGame() não rodou ainda.');
-      return false;
-    }
+    if (N === 0) return false;
     let tentativas = 0;
     while (tentativas < N) {
       const candidato = rodizioIndex % N;
-      if (groups[candidato] && groups[candidato].pos < houseCount - 1) {
+      if (groups[candidato].pos < houseCount - 1) {
         currentTeamIndex = candidato;
         rodizioIndex = (rodizioIndex + 1) % N;
         updateRodizioInfo();
@@ -2179,37 +2162,19 @@
     if (mood === 'sad')            box.classList.add('crying');
   }
 
-  /* ✅ CORRIGIDO: validação defensiva completa */
   function loadQuestionIntoPanel(questionNumber, teamIndex) {
-    // Valida questão
     if (questionNumber < 1 || questionNumber > questionRepo.length) {
-      document.getElementById('qpQuestionText').innerHTML =
-        `<span class="qp-empty">Questão Nº ${questionNumber} não existe no repositório.</span>`;
+      document.getElementById('qpQuestionText').innerHTML = `<span class="qp-empty">Questão Nº ${questionNumber} não existe no repositório.</span>`;
       return;
     }
-    // Valida equipe
-    if (teamIndex === null || teamIndex === undefined || !groups[teamIndex]) {
-      document.getElementById('qpQuestionText').innerHTML =
-        `<span class="qp-empty">Nenhuma equipe selecionada. Clique em 🎲 SORTEAR novamente.</span>`;
-      return;
-    }
-
     const q = questionRepo[questionNumber - 1];
     const g = groups[teamIndex];
-
-    // Valida estrutura da questão
-    if (!q || !Array.isArray(q.alternativas) || q.alternativas.length === 0) {
-      document.getElementById('qpQuestionText').innerHTML =
-        `<span class="qp-empty">Questão Nº ${questionNumber} está incompleta (sem alternativas).</span>`;
-      return;
-    }
 
     currentTeamIndex = teamIndex;
     renderQpChar('normal', false);
 
-    document.getElementById('qpTeamName').textContent =
-      `${g.name} · CASA ${g.pos + 1} · QUESTÃO Nº ${questionNumber}`;
-    document.getElementById('qpQuestionText').textContent = q.enunciado || '(sem enunciado)';
+    document.getElementById('qpTeamName').textContent = `${g.name} · CASA ${g.pos + 1} · QUESTÃO Nº ${questionNumber}`;
+    document.getElementById('qpQuestionText').textContent = q.enunciado;
 
     const altsBox = document.getElementById('qpAlternatives');
     altsBox.innerHTML = '';
@@ -2217,7 +2182,7 @@
     q.alternativas.forEach((alt, i) => {
       const btn = document.createElement('button');
       btn.className = 'qp-alt-btn';
-      btn.innerHTML = `<b>${letras[i] || (i + 1)})</b> ${alt}`;
+      btn.innerHTML = `<b>${letras[i]})</b> ${alt}`;
       btn.dataset.idx = i;
       btn.onclick = () => responderQuestao(i, q);
       altsBox.appendChild(btn);
@@ -2726,20 +2691,12 @@
     toast(`Roleta configurada: questões 1 a ${qtd}`);
   }
 
-  /* ✅ CORRIGIDO: validações defensivas + try/catch */
   function sortearNumero() {
-    // 1) Verifica se o jogo foi iniciado
-    if (!groups || groups.length === 0) {
-      toast("⚠️ Inicie a investigação primeiro (tela inicial → INVESTIGAR).");
-      return;
-    }
-    // 2) Verifica repositório
     if (questionRepo.length === 0) {
       toast("⚠️ Nenhuma questão cadastrada! Vá em ⚙️ CONFIG → 📚 QUESTÕES.");
       return;
     }
-    // 3) Verifica roleta
-    if (roletaNumeros.length === 0) {
+    if(roletaNumeros.length === 0){
       toast("🎲 Todas as questões já foram sorteadas! Clique em RESET.");
       return;
     }
@@ -2748,7 +2705,7 @@
     const numeroSorteado = roletaNumeros[randomIndex];
     roletaNumeros.splice(randomIndex, 1);
     numerosSorteados.push(numeroSorteado);
-    document.getElementById('numeroSorteadoDisplay').innerHTML = String(numeroSorteado).padStart(2, '0');
+    document.getElementById('numeroSorteadoDisplay').innerHTML = String(numeroSorteado).padStart(2,'0');
     atualizarListaSorteados();
 
     const ok = selectTeamForRodizio();
@@ -2757,22 +2714,10 @@
       return;
     }
 
-    // 4) Garante que o número existe no repositório
-    if (numeroSorteado > questionRepo.length) {
-      toast(`⚠️ Questão Nº ${numeroSorteado} não existe no repositório.`);
-      return;
-    }
-
     currentQuestionNumber = numeroSorteado;
     questionAnswered = false;
-
-    try {
-      loadQuestionIntoPanel(numeroSorteado, currentTeamIndex);
-      toast(`🎲 Questão Nº ${numeroSorteado} · Vez de ${groups[currentTeamIndex].name}`);
-    } catch (err) {
-      console.error('[SORTEAR] Erro ao carregar questão:', err);
-      toast("❌ Erro ao carregar questão. Veja o console.");
-    }
+    loadQuestionIntoPanel(numeroSorteado, currentTeamIndex);
+    toast(`🎲 Questão Nº ${numeroSorteado} · Vez de ${groups[currentTeamIndex].name}`);
   }
 
   function resetarRoleta() {
@@ -2985,11 +2930,10 @@
     showLoginMsg('Sessão encerrada.', '#a8d5ff');
   };
 
-  /* ✅ CORRIGIDO: chama startGame() para garantir inicialização completa */
   document.getElementById('btnContinue').onclick = () => {
     if (currentUser) loadUserData();
     refreshLoginUI();
-    startGame(); // garante groups populado + roleta pronta
+    enterGame();
   };
 
   /* Autosave e beforeunload */
@@ -3085,24 +3029,21 @@
     }
   }
 
-  /* ✅ CORRIGIDO: ordem de inicialização — carrega dados do usuário ANTES de renderizar */
   document.addEventListener('DOMContentLoaded', () => {
     applyLogo(LOGO_IMAGE);
     applyCards();
     renderAlternativeInputs(4);
+    renderQuestionRepo();
     updateRoletaMax();
     initMarioBg();
+    renderTeamInputs();
 
     const hasSession = loadSession();
     refreshLoginUI();
     if (hasSession) {
-      loadUserData();      // carrega dados do usuário logado
-      renderTeamInputs();  // re-renderiza equipes após load
-      renderQuestionRepo();
+      loadUserData();
+      // Usuário já logado — pode continuar direto
     } else {
-      // sem sessão: renderiza padrões
-      renderTeamInputs();
-      renderQuestionRepo();
       goToLoginScreen();
     }
   });
