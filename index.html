@@ -2336,6 +2336,12 @@
     });
   }
 
+  const POWERS_DEF = [
+    { id: 'p1', name: 'CONSULTAR EQUIPE', desc: 'Peça ajuda aos colegas' },
+    { id: 'p2', name: 'CONSULTAR ALIADO', desc: 'Outro grupo ajuda' },
+    { id: 'p3', name: 'PISTA SECRETA',    desc: 'Passe a pergunta adiante' }
+  ];
+
   function usePowerCard(groupIdx, powerId){
     if(usedPowers[groupIdx][powerId]){ toast("Carta já utilizada!"); return; }
     usedPowers[groupIdx][powerId] = true;
